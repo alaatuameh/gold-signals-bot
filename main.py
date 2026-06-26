@@ -29,12 +29,12 @@ async def analyze_chart(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = result["candidates"][0]["content"]["parts"][0]["text"]
     await update.message.reply_text(text)
 
-async def main():
+def main():
     app = Application.builder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.PHOTO, analyze_chart))
-    await asyncio.run(main())
+    await main()
 
 if __name__ == "__main__":
     import asyncio
-    asyncio.run(main())
+    main()
