@@ -33,8 +33,8 @@ async def main():
     app = Application.builder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.PHOTO, analyze_chart))
-    await app.run_polling()
+    await asyncio.run(main())
 
 if __name__ == "__main__":
     import asyncio
-    app.run_polling()
+    asyncio.run(main())
