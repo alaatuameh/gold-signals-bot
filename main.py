@@ -1,5 +1,3 @@
-
-import logging
 import os
 import base64
 import requests
@@ -11,13 +9,11 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
-logging.basicConfig(level=logging.INFO)
-
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.end_headers()
-        self.wfile.write(b"OK")
+        self.wfile.write(b"Bot is running!")
     def log_message(self, format, *args):
         pass
 
@@ -38,7 +34,7 @@ async def analyze_chart(update: Update, context: ContextTypes.DEFAULT_TYPE):
     image_bytes = await file.download_as_bytearray()
     image_base64 = base64.b64encode(image_bytes).decode("utf-8")
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
-    payload = {"contents": [{"parts": [{"inline_data": {"mime_type": "image/jpeg", "data": image_base64}}, {"text": "Analyze this gold trading chart and give me a trading recommendation"}]}]}
+    payload = {"contents": [{"parts": [{"inline_data": {"mime_type": "image/jpeg", "data": image_base64}}, {"text": "Analyze this gold chart and give BUY or SELL signal with entry point, Stop Loss, and Take Profit levels."}]}]}
     response = requests.post(url, json=payload)
     result = response.json()
     text = result["candidates"][0]["content"]["parts"][0]["text"]
@@ -51,5 +47,5 @@ def main():
     app.add_handler(MessageHandler(filters.PHOTO, analyze_chart))
     app.run_polling()
 
-if naif _name_ == "_main_":
+if __name__ == "__main__":
     main()
