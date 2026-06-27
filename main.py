@@ -2,6 +2,8 @@ import logging
 import os
 import base64
 import requests
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
@@ -10,8 +12,20 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 logging.basicConfig(level=logging.INFO)
 
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"OK")
+    def log_message(self, format, *args):
+        pass
+
+def run_server():
+    server = HTTPServer(("0.0.0.0", 10000), Handler)
+    server.serve_forever()
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("مرحبا! أرسل صورة شارت الذهب وسأحللها 📊")
+    await update.message.reply_text("مرحبا! أرسل صورة شارت الذهب وساحللها 📊")
 
 async def analyze_chart(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message.photo:
@@ -23,19 +37,18 @@ async def analyze_chart(update: Update, context: ContextTypes.DEFAULT_TYPE):
     image_bytes = await file.download_as_bytearray()
     image_base64 = base64.b64encode(image_bytes).decode("utf-8")
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
-    payload = {"contents": [{"parts": [{"inline_data": {"mime_type": "image/jpeg", "data": image_base64}}, {"text": "حلل هذا الشارت وأعطني توصية BUY أو SELL مع نقطة الدخول وStop Loss وTake Profit"}]}]}
+    payload = {"contents": [{"parts": [{"inline_data": {"mime_type": "image/jpeg", "data": image_base64}}, {"text": "حلل هذا الشارت وأعطني توصية تداول للذهب"}]}]}
     response = requests.post(url, json=payload)
     result = response.json()
     text = result["candidates"][0]["content"]["parts"][0]["text"]
     await update.message.reply_text(text)
 
 def main():
+    threading.Thread(target=run_server, daemon=True).start()
     app = Application.builder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.PHOTO, analyze_chart))
     app.run_polling()
 
-if __name__ == "__main__":
-    import asyncio
+if name == "main":
     main()
-
