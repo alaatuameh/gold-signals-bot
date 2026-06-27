@@ -1,3 +1,4 @@
+
 import logging
 import os
 import base64
@@ -25,19 +26,19 @@ def run_server():
     server.serve_forever()
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("مرحبا! أرسل صورة شارت الذهب وساحللها 📊")
+    await update.message.reply_text("Hello! Send me a gold chart image and I will analyze it!")
 
 async def analyze_chart(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message.photo:
-        await update.message.reply_text("أرسل صورة الشارت 📸")
+        await update.message.reply_text("Please send a chart image!")
         return
-    await update.message.reply_text("جاري التحليل... ⏳")
+    await update.message.reply_text("Analyzing...")
     photo = update.message.photo[-1]
     file = await context.bot.get_file(photo.file_id)
     image_bytes = await file.download_as_bytearray()
     image_base64 = base64.b64encode(image_bytes).decode("utf-8")
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
-    payload = {"contents": [{"parts": [{"inline_data": {"mime_type": "image/jpeg", "data": image_base64}}, {"text": "حلل هذا الشارت وأعطني توصية تداول للذهب"}]}]}
+    payload = {"contents": [{"parts": [{"inline_data": {"mime_type": "image/jpeg", "data": image_base64}}, {"text": "Analyze this gold trading chart and give me a trading recommendation"}]}]}
     response = requests.post(url, json=payload)
     result = response.json()
     text = result["candidates"][0]["content"]["parts"][0]["text"]
@@ -50,5 +51,5 @@ def main():
     app.add_handler(MessageHandler(filters.PHOTO, analyze_chart))
     app.run_polling()
 
-if name == "main":
+if naif _name_ == "_main_":
     main()
