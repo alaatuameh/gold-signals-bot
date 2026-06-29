@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import threading
 import requests
 from telegram import Update
 from telegram.ext import Application, MessageHandler, CommandHandler, filters, ContextTypes
@@ -8,7 +9,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 GEMINI_API_KEY = "YOUR_GEMINI_API_KEY"
 TWELVEDATA_API_KEY = "YOUR_TWELVEDATA_API_KEY"
 CHAT_ID = "YOUR_CHAT_ID"
-BOT_TOKEN = "YOUR_BOT_TOKEN"
+TELEGRAM_TOKEN = "YOUR_BOT_TOKEN"
 
 class Handler(BaseHTTPRequestHandler):
     pass
@@ -40,26 +41,16 @@ async def analyze_chart(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ]
         }]
     }
-if "candidates" in result and result["candidates"]:
-    text = result["candidates"][0]["content"]["parts"][0]["text"]
-else:
-    print("Gemini error:", result)
-    await update.message.reply_text("❌ Error analyzing chart, try again.")
-    return
+
     try:
         response = requests.post(url, json=payload)
         result = response.json()
-if "values" not in data:
-    print("Twelve Data error:", data)
-    await asyncio.sleep(60)
-    continue
-values = data["values"]
-        # ✅ الإصلاح هنا
+
         if "candidates" in result and result["candidates"]:
             text = result["candidates"][0]["content"]["parts"][0]["text"]
         else:
-            print("Gemini error response:", result)
-            await update.message.reply_text("❌ Error analyzing chart, please try again.")
+            print("Gemini error:", result)
+            await update.message.reply_text("❌ Error analyzing chart, try again.")
             return
 
         await update.message.reply_text(text)
@@ -74,7 +65,6 @@ async def auto_signal(bot):
             response = requests.get(url)
             data = response.json()
 
-            # ✅ الإصلاح هنا
             if "values" not in data:
                 print("Twelve Data error:", data)
                 await asyncio.sleep(60)
@@ -98,22 +88,16 @@ async def auto_signal(bot):
         except Exception as e:
             print(f"auto_signal error: {e}")
 
-        await asyncio.sleep(3600)  # كل ساعة
+        await asyncio.sleep(3600)
 
-async def main():
-    app = Application.builder().token(BOT_TOKEN).build()
+def main():
+    threading.Thread(target=run_server, daemon=True).start()
+    app = Application.builder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.PHOTO, analyze_chart))
-
-    asyncio.get_event_loop().run_in_executor(None, run_server)
-
-    async with app:
-        await app.start()
-        await asyncio.gather(
-            app.updater.start_polling(),
-            auto_signal(app.bot)
-        )
-        await app.stop()
+    loop = asyncio.get_event_loop()
+    loop.create_task(auto_signal(app.bot))
+    app.run_polling(drop_pending_updates=True)
 
 if name == "main":
-    asyncio.run(main())
+    main()
