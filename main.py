@@ -2,12 +2,15 @@ import os
 import base64
 import requests
 import threading
+import asyncio
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from telegram import Update
+from telegram import Update, Bot
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+TWELVEDATA_API_KEY = os.environ.get("TWELVEDATA_API_KEY")
+CHAT_ID = "8091574168"
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -40,13 +43,36 @@ async def analyze_chart(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = result["candidates"][0]["content"]["parts"][0]["text"]
     await update.message.reply_text(text)
 
+async def auto_signal(bot):
+    while True:
+        try:
+            url = f"https://api.twelvedata.com/time_series?symbol=XAU/USD&interval=1h&outputsize=10&apikey={TWELVEDATA_API_KEY}"
+            response = requests.get(url)
+            data = response.json()
+            values = data["values"]
+            closes = [float(v["close"]) for v in values]
+            latest = closes[0]
+            prev = closes[1]
+            change = latest - prev
+            if change > 2:
+                signal = f"🟢 BUY SIGNAL\nXAU/USD\nPrice: {latest}\nEntry: {latest}\nSL: {latest - 10}\nTP: {latest + 20}"
+            elif change < -2:
+                signal = f"🔴 SELL SIGNAL\nXAU/USD\nPrice: {latest}\nEntry: {latest}\nSL: {latest + 10}\nTP: {latest - 20}"
+            else:
+                signal = f"⏳ No clear signal now\nXAU/USD Price: {latest}"
+            await bot.send_message(chat_id=CHAT_ID, text=signal)
+        except Exception as e:
+            print(f"Auto signal error: {e}")
+        await asyncio.sleep(3600)
+
 def main():
     threading.Thread(target=run_server, daemon=True).start()
     app = Application.builder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.PHOTO, analyze_chart))
+    loop = asyncio.get_event_loop()
+    loop.create_task(auto_signal(app.bot))
     app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
     main()
-
