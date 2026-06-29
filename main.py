@@ -40,11 +40,20 @@ async def analyze_chart(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ]
         }]
     }
-
+if "candidates" in result and result["candidates"]:
+    text = result["candidates"][0]["content"]["parts"][0]["text"]
+else:
+    print("Gemini error:", result)
+    await update.message.reply_text("❌ Error analyzing chart, try again.")
+    return
     try:
         response = requests.post(url, json=payload)
         result = response.json()
-
+if "values" not in data:
+    print("Twelve Data error:", data)
+    await asyncio.sleep(60)
+    continue
+values = data["values"]
         # ✅ الإصلاح هنا
         if "candidates" in result and result["candidates"]:
             text = result["candidates"][0]["content"]["parts"][0]["text"]
