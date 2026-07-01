@@ -42,7 +42,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def analyze_chart(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message.photo:
-        await update.message.reply_text("Please send a chart image!")
         return
 
     await update.message.reply_text("Analyzing chart, please wait...")
@@ -70,7 +69,8 @@ async def analyze_chart(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text = result["candidates"][0]["content"]["parts"][0]["text"]
             await update.message.reply_text(text)
         else:
-            await update.message.reply_text("Error analyzing chart, please try again.")
+            # هون التعديل: بيوريك تفاصيل الخطأ الحقيقي بدل رسالة عامة
+            await update.message.reply_text(f"Error from Gemini:\n{result}")
 
     except Exception as e:
         await update.message.reply_text(f"Error: {str(e)}")
