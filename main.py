@@ -51,7 +51,7 @@ async def analyze_chart(update: Update, context: ContextTypes.DEFAULT_TYPE):
         image_bytes = await file.download_as_bytearray()
         image_base64 = base64.b64encode(image_bytes).decode("utf-8")
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key={GEMINI_API_KEY}"
         payload = {
             "contents": [{
                 "parts": [
