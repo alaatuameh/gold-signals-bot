@@ -42,6 +42,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def analyze_chart(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message.photo:
+        await update.message.reply_text("Please send a chart image!")
         return
 
     await update.message.reply_text("Analyzing chart, please wait...")
@@ -52,7 +53,8 @@ async def analyze_chart(update: Update, context: ContextTypes.DEFAULT_TYPE):
         image_bytes = await file.download_as_bytearray()
         image_base64 = base64.b64encode(image_bytes).decode("utf-8")
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+        headers = {"x-goog-api-key": GEMINI_API_KEY}
         payload = {
             "contents": [{
                 "parts": [
@@ -62,15 +64,14 @@ async def analyze_chart(update: Update, context: ContextTypes.DEFAULT_TYPE):
             }]
         }
 
-        response = requests.post(url, json=payload, timeout=30)
+        response = requests.post(url, headers=headers, json=payload, timeout=30)
         result = response.json()
 
         if "candidates" in result and result["candidates"]:
             text = result["candidates"][0]["content"]["parts"][0]["text"]
             await update.message.reply_text(text)
         else:
-            # هون التعديل: بيوريك تفاصيل الخطأ الحقيقي بدل رسالة عامة
-            await update.message.reply_text(f"Error from Gemini:\n{result}")
+            await update.message.reply_text("Error analyzing chart, please try again.")
 
     except Exception as e:
         await update.message.reply_text(f"Error: {str(e)}")
