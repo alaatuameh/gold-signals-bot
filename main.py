@@ -5,11 +5,12 @@ import os
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from telegram import Update
 from telegram.ext import Application, MessageHandler, CommandHandler, filters, ContextTypes
-import requests
+import google.generativeai as genai
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-CHAT_ID = os.environ.get("CHAT_ID")
+
+genai.configure(api_key=GEMINI_API_KEY)
 
 GEMINI_PROMPT = """You are a gold XAUUSD trading expert.
 Analyze this chart and reply in Arabic with:
@@ -51,27 +52,14 @@ async def analyze_chart(update: Update, context: ContextTypes.DEFAULT_TYPE):
         photo = update.message.photo[-1]
         file = await context.bot.get_file(photo.file_id)
         image_bytes = await file.download_as_bytearray()
-        image_base64 = base64.b64encode(image_bytes).decode("utf-8")
 
-        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
-        headers = {"x-goog-api-key": GEMINI_API_KEY}
-        payload = {
-            "contents": [{
-                "parts": [
-                    {"inline_data": {"mime_type": "image/jpeg", "data": image_base64}},
-                    {"text": GEMINI_PROMPT}
-                ]
-            }]
-        }
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        response = model.generate_content([
+            {"mime_type": "image/jpeg", "data": bytes(image_bytes)},
+            GEMINI_PROMPT
+        ])
 
-        response = requests.post(url, headers=headers, json=payload, timeout=30)
-        result = response.json()
-
-        if "candidates" in result and result["candidates"]:
-            text = result["candidates"][0]["content"]["parts"][0]["text"]
-            await update.message.reply_text(text)
-        else:
-            await update.message.reply_text("Error analyzing chart, please try again.")
+        await update.message.reply_text(response.text)
 
     except Exception as e:
         await update.message.reply_text(f"Error: {str(e)}")
