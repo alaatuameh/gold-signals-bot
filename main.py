@@ -1,5 +1,3 @@
-import asyncio
-import base64
 import threading
 import os
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -53,7 +51,7 @@ async def analyze_chart(update: Update, context: ContextTypes.DEFAULT_TYPE):
         file = await context.bot.get_file(photo.file_id)
         image_bytes = await file.download_as_bytearray()
 
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-2.0-flash")
         response = model.generate_content([
             {"mime_type": "image/jpeg", "data": bytes(image_bytes)},
             GEMINI_PROMPT
